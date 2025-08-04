@@ -5,7 +5,7 @@ import mysql.connector
 from dotenv import load_dotenv
 load_dotenv()
 import pandas as pd
-
+import pickle
 host = os.getenv("host")
 password = os.getenv("password")
 username = os.getenv("user")
@@ -29,3 +29,11 @@ def get_data_from_database():
     except Exception as e:
         raise CustomException(e)
 
+def save_object(filename, obj):
+    try:
+        os.makedirs(os.path.dirname(filename), exist_ok=True)
+        with open(filename, "wb") as f:
+            pickle.dump(obj, f)
+
+    except Exception as e:
+        raise CustomException(e)

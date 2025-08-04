@@ -6,6 +6,8 @@ from src.ml_project.exception import CustomException
 if __name__ == '__main__':
     try:
         raw_df, train_df, test_df = DataIngestion().getting_mysql_data()
-        DataTransformation().get_data_for_transformation(train_df, test_df)
+        train_arr, test_arr = DataTransformation().get_data_for_transformation(train_df, test_df)
+        print(train_arr)
+
     except Exception as e:
         raise CustomException(e)
