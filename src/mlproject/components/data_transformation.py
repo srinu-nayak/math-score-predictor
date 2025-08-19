@@ -1,3 +1,5 @@
+import numpy as np
+
 from src.mlproject.exception import CustomException
 from src.mlproject.logger import logging
 from dataclasses import dataclass
@@ -8,6 +10,9 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.preprocessing import OneHotEncoder, OrdinalEncoder
 from sklearn.compose import ColumnTransformer
 from sklearn.impute import SimpleImputer
+
+from src.mlproject.utils import save_object
+
 
 @dataclass
 class DataTransformationConfig:
@@ -59,10 +64,12 @@ class DataTransformation:
             logging.info(f"seperating target feature from train_df")
             input_feature_train_df = train_df.drop(columns=["math_score"])
             target_feature_train_df = train_df["math_score"]
+            target_feature_train_df = target_feature_train_df.values.reshape(-1,1)
 
             logging.info(f"seperating target feature from test_df")
             input_feature_test_df = test_df.drop(columns=["math_score"])
             target_feature_test_df = test_df["math_score"]
+            target_feature_test_df = target_feature_test_df.values.reshape(-1,1)
 
             preprocessor_object = self.transforming_data(input_feature_train_df)
 
@@ -71,9 +78,22 @@ class DataTransformation:
             input_feature_train_arr = preprocessor_object.fit_transform(input_feature_train_df)
             input_feature_test_arr = preprocessor_object.transform(input_feature_test_df)
 
+            logging.info(f"preprocessor object transformed")
+            train_arr = np.concatenate((input_feature_train_arr, target_feature_train_df), axis=1)
+            test_arr = np.concatenate((input_feature_test_arr, target_feature_test_df), axis=1)
 
 
+            logging.info(f"preprocessor object sending to utils file")
 
+            save_object(
+                self.preprocessor_obj_config.preprocessor_obj,
+                preprocessor_object,
+            )
+
+            return (
+                train_arr,
+                test_arr,
+            )
 
         except Exception as e:
             raise CustomException(e)

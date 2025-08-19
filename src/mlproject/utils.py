@@ -1,3 +1,5 @@
+import pickle
+
 import mysql.connector
 from src.mlproject.exception import CustomException
 from src.mlproject.logger import logging
@@ -37,6 +39,16 @@ def connecting_to_mysql_database():
         mydb.close()
         logging.info("Database connection closed.")
         return df
+
+    except Exception as e:
+        raise CustomException(e)
+
+def save_object(preprocessor_obj,preprocessor_object):
+    try:
+
+        os.makedirs(os.path.dirname(preprocessor_obj), exist_ok=True)
+        with open(preprocessor_obj, "wb") as f:
+            pickle.dump(preprocessor_object, f)
 
     except Exception as e:
         raise CustomException(e)
