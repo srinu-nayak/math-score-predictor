@@ -45,12 +45,12 @@ def connecting_to_mysql_database():
     except Exception as e:
         raise CustomException(e)
 
-def save_object(preprocessor_obj,preprocessor_object):
+def save_object(filename,obj):
     try:
 
-        os.makedirs(os.path.dirname(preprocessor_obj), exist_ok=True)
-        with open(preprocessor_obj, "wb") as f:
-            pickle.dump(preprocessor_object, f)
+        os.makedirs(os.path.dirname(filename), exist_ok=True)
+        with open(filename, "wb") as f:
+            pickle.dump(obj, f)
 
     except Exception as e:
         raise CustomException(e)
@@ -61,6 +61,8 @@ def evaluate_model(X_train, y_train, X_test, y_test, models:dict, params:dict):
         logging.info("Evaluating model...")
 
         r2_score_report ={}
+        best_params_report = {}
+        best_estimator_report = {}
 
         for model_name, model in models.items():
 
@@ -77,7 +79,14 @@ def evaluate_model(X_train, y_train, X_test, y_test, models:dict, params:dict):
             r2_score_test_model = r2_score(y_test,y_test_pred)
             r2_score_report[model_name] = r2_score_test_model
 
-            return r2_score_report
+            best_params = grid_search.best_params_
+            best_params_report[model_name] = best_params
+
+            best_estimators = grid_search.best_estimator_
+            best_estimator_report[model_name] = best_estimators
+
+
+            return r2_score_report, best_params_report, best_estimator_report
 
 
 
