@@ -1,9 +1,10 @@
 import os
+import numpy as np
 from sklearn.metrics import r2_score, mean_squared_error, mean_absolute_error
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.linear_model import LinearRegression
 from sklearn.tree import DecisionTreeRegressor
-
+import mlflow
 from src.mlproject.exception import CustomException
 from src.mlproject.logger import logging
 from dataclasses import dataclass
@@ -18,6 +19,13 @@ class ModelTrainerConfig:
 class ModelTrainer:
     def __init__(self):
         self.model_trainer_config = ModelTrainerConfig()
+
+    def eval_metrics(self, y_test, y_pred):
+        r2 = r2_score(y_test, y_pred)
+        mae = mean_absolute_error(y_test, y_pred)
+        mse = mean_squared_error(y_test, y_pred)
+        rmse = np.sqrt(mse)
+        return r2, mae, mse, rmse
 
     def model_trainer(self, train_arr,test_arr):
         try:
@@ -71,14 +79,22 @@ class ModelTrainer:
             model = best_model.fit(X_train, y_train)
             y_pred = model.predict(X_test)
 
-            r2, mae, mse = r2_score(y_test, y_pred), mean_absolute_error(y_test, y_pred), mean_squared_error(y_test, y_pred)
+            #mlflow
+            with mlflow.start_run():
+
+                (r2, mae, mse, rmse) = self.eval_metrics(y_test, y_pred)
+                mlflow.log_metric('r2', r2)
+                mlflow.log_metric('mae', mae)
+                mlflow.log_metric('mse', mse)
+                mlflow.log_metric('rmse', rmse)
+
 
             save_object(
                 self.model_trainer_config.model_path,
                 best_model
             )
 
-            return r2, mae, mse
+            # return r2, mae, mse
 
         except Exception as e:
             raise CustomException(e)
