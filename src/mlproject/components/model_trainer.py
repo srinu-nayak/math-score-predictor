@@ -1,5 +1,5 @@
 import os
-
+from sklearn.metrics import r2_score, mean_squared_error, mean_absolute_error
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.linear_model import LinearRegression
 from sklearn.tree import DecisionTreeRegressor
@@ -67,11 +67,18 @@ class ModelTrainer:
             logging.info("Best hyperparameters: {}".format(best_hyperparameters))
             print("Best hyperparameters: {}".format(best_hyperparameters))
 
+
+            model = best_model.fit(X_train, y_train)
+            y_pred = model.predict(X_test)
+
+            r2, mae, mse = r2_score(y_test, y_pred), mean_absolute_error(y_test, y_pred), mean_squared_error(y_test, y_pred)
+
             save_object(
                 self.model_trainer_config.model_path,
                 best_model
             )
 
+            return r2, mae, mse
 
         except Exception as e:
             raise CustomException(e)
