@@ -8,8 +8,11 @@ import mlflow
 from src.mlproject.exception import CustomException
 from src.mlproject.logger import logging
 from dataclasses import dataclass
-
+import matplotlib.pyplot as plt
 from src.mlproject.utils import evaluate_model, save_object
+import dagshub
+dagshub.init(repo_owner='srinu-nayak', repo_name='math-score-predictor', mlflow=True)
+
 
 
 @dataclass
@@ -88,13 +91,31 @@ class ModelTrainer:
                 mlflow.log_metric('mse', mse)
                 mlflow.log_metric('rmse', rmse)
 
+                # log params
+                mlflow.log_param("model_name", best_model_name)
+                for param, value in best_hyperparameters.items():
+                    mlflow.log_param(param, value)
+
+                mlflow.log_param("train_samples", X_train.shape[0])
+                mlflow.log_param("test_samples", X_test.shape[0])
+                mlflow.log_param("features", X_train.shape[1])
+
+                # log model
+                mlflow.sklearn.log_model(best_model, "model")
+
+                # log residuals plot
+                plt.scatter(y_test, y_pred)
+                plt.xlabel("Actual")
+                plt.ylabel("Predicted")
+                plt.title(f"{best_model_name} Residuals")
+                plt.savefig("residuals.png")
+                mlflow.log_artifact("residuals.png")
+
 
             save_object(
                 self.model_trainer_config.model_path,
                 best_model
             )
-
-            # return r2, mae, mse
 
         except Exception as e:
             raise CustomException(e)
