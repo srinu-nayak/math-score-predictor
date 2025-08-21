@@ -17,6 +17,15 @@ jobs:
         with:
           python-version: '3.10'
 
+      # Cache pip packages
+      - name: Cache pip
+        uses: actions/cache@v3
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+
       # Install dependencies
       - name: Install dependencies
         run: pip install --no-cache-dir -r requirements.txt
@@ -38,9 +47,20 @@ jobs:
       - name: Log into DockerHub
         run: echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
 
+      # Cache Docker layers
+      - name: Cache Docker layers
+        uses: actions/cache@v3
+        with:
+          path: /tmp/.docker-cache
+          key: ${{ runner.os }}-docker-${{ github.sha }}
+
       # Build Docker image with Git SHA tag and latest
       - name: Build Docker image
-        run: docker build -t srinu0930/math-score-predictor:${{ github.sha }} -t srinu0930/math-score-predictor:latest .
+        run: |
+          docker build \
+            --cache-from /tmp/.docker-cache \
+            -t srinu0930/math-score-predictor:${{ github.sha }} \
+            -t srinu0930/math-score-predictor:latest .
 
       # Push Docker image with SHA tag
       - name: Push Docker image (SHA tag)
@@ -60,14 +80,7 @@ jobs:
           debug: true
           timeout: 10m
           script: |
-            # Pull latest image
             docker pull srinu0930/math-score-predictor:latest
-
-            # Stop old container if running
             docker stop ml-app || true
-
-            # Remove old container
             docker rm ml-app || true
-
-            # Run new container with restart policy
             docker run -d -p 5000:5000 --name ml-app --restart unless-stopped srinu0930/math-score-predictor:latest
