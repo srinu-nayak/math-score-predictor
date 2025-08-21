@@ -4,5 +4,6 @@ scikit-learn
 mysql-connector-python
 python-dotenv
 mlflow==2.11.0
+flask
 
 -e .
