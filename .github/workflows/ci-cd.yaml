@@ -17,6 +17,15 @@ jobs:
         with:
           python-version: '3.10'
 
+      # Cache pip packages
+      - name: Cache pip
+        uses: actions/cache@v3
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+
       # Install dependencies
       - name: Install dependencies
         run: pip install --no-cache-dir -r requirements.txt
@@ -34,19 +43,37 @@ jobs:
       # Checkout code
       - uses: actions/checkout@v3
 
-      # Log in to DockerHub
+      # Log into DockerHub
       - name: Log into DockerHub
         run: echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
 
-      # Build Docker image with Git SHA tag and latest
-      - name: Build Docker image
-        run: docker build -t srinu0930/math-score-predictor:${{ github.sha }} -t srinu0930/math-score-predictor:latest .
+      # Setup Docker Buildx for caching
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
 
-      # Push Docker image with SHA tag
+      # Cache Docker layers
+      - name: Cache Docker layers
+        uses: actions/cache@v3
+        with:
+          path: /tmp/.buildx-cache
+          key: ${{ runner.os }}-docker-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-docker-
+
+      # Build Docker image with caching
+      - name: Build Docker image
+        run: |
+          docker buildx build \
+            --cache-from=type=local,src=/tmp/.buildx-cache \
+            --cache-to=type=local,dest=/tmp/.buildx-cache \
+            -t srinu0930/math-score-predictor:${{ github.sha }} \
+            -t srinu0930/math-score-predictor:latest .
+
+      # Push Docker image (SHA tag)
       - name: Push Docker image (SHA tag)
         run: docker push srinu0930/math-score-predictor:${{ github.sha }}
 
-      # Push Docker image latest tag
+      # Push Docker image (latest tag)
       - name: Push Docker image (latest tag)
         run: docker push srinu0930/math-score-predictor:latest
 
@@ -60,7 +87,7 @@ jobs:
           debug: true
           timeout: 10m
           script: |
-            # Pull latest image
+            # Pull the latest Docker image
             docker pull srinu0930/math-score-predictor:latest
 
             # Stop old container if running
@@ -70,4 +97,7 @@ jobs:
             docker rm ml-app || true
 
             # Run new container with restart policy
-            docker run -d -p 5000:5000 --name ml-app --restart unless-stopped srinu0930/math-score-predictor:latest
+            docker run -d -p 5000:5000 \
+              --name ml-app \
+              --restart unless-stopped \
+              srinu0930/math-score-predictor:latest
