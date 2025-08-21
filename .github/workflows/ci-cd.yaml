@@ -102,14 +102,13 @@ jobs:
       - name: Push latest tag
         run: docker push srinu0930/math-score-predictor:latest
 
-      # Deploy to server via SSH
-      - name: Deploy on server via SSH
+      # Deploy to AWS EC2 via SSH
+      - name: Deploy on AWS EC2 via SSH
         uses: appleboy/ssh-action@v0.1.10
         with:
-          host: ${{ secrets.SERVER_HOST }}        # Server IP or domain
-          username: ${{ secrets.SERVER_USER }}    # SSH username
-          key: ${{ secrets.SERVER_SSH_KEY }}      # Private SSH key
-          debug: true                             # Optional, prints debug info
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
           script: |
             docker pull srinu0930/math-score-predictor:latest
             docker stop ml-app || true
